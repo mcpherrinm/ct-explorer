@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CT Field Glass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css?family=Inter:700,800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAQAAAC1+jfqAAAAM0lEQVR42mNkIAIwEqmOgQmG/0eAav7/R4AyMDCwMDA82AgVnWgCYVMgVQzEoIYBAGkXBBG6cW8fAAAAAElFTkSuQmCC" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">Certificate Transparency</a>
+      <nav aria-label="Primary">
+        <a href="#certificate">Certificate</a>
+        <a href="#scts">SCTs</a>
+        <a href="#proofs">Proof</a>
+        <a class="nav-button" href="https://certificate.transparency.dev/">CT site</a>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="intro">
+        <div class="intro-copy">
+          <p class="eyebrow">Certificate Transparency verifier</p>
+          <h1>Trace a certificate into the public record.</h1>
+          <form id="lookup-form" class="lookup">
+            <label for="target">Website</label>
+            <div class="lookup-row">
+              <input id="target" name="target" value="https://jordan-wright.com" autocomplete="url" />
+              <button type="submit">Trace</button>
+            </div>
+          </form>
+          <p class="plain-note">Fetch the live certificate, decode SCT promises, rebuild the CT leaf, and verify the Merkle path against the log’s signed tree head.</p>
+        </div>
+        <div class="plate" aria-hidden="true">
+          <div class="proof-map">
+            <div class="proof-node browser-node">
+              <span class="node-kicker">TLS</span>
+              <strong>website certificate</strong>
+              <small>leaf + chain</small>
+            </div>
+            <div class="proof-node sct-node">
+              <span class="node-kicker">SCT</span>
+              <strong>signed promise</strong>
+              <small>log id + timestamp</small>
+            </div>
+            <div class="proof-node leaf-node">
+              <span class="node-kicker">Leaf</span>
+              <strong>precert hash</strong>
+              <small>00 || MerkleTreeLeaf</small>
+            </div>
+            <div class="proof-node path-node-hero">
+              <span class="node-kicker">Path</span>
+              <strong>audit siblings</strong>
+              <small>left/right at each level</small>
+            </div>
+            <div class="proof-node root-node">
+              <span class="node-kicker">STH</span>
+              <strong>same root</strong>
+              <small>signed tree head</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="status-band">
+        <span id="status">Ready to trace a certificate.</span>
+      </section>
+
+      <section class="grid">
+        <article class="panel cert-panel" style="--step: '01'">
+          <div class="panel-kicker">Handshake</div>
+          <h2>Fetch the certificate</h2>
+          <p class="section-copy">The trace starts the same way a browser does: open a TLS connection, receive the certificate chain, and inspect the leaf certificate for the domain name, issuer, validity window, and CT data.</p>
+          <p class="resource-row"><a href="https://certificate.transparency.dev/howctworks/" target="_blank" rel="noreferrer">How CT fits into Web PKI</a></p>
+          <div id="certificate" class="empty">The TLS leaf certificate will land here.</div>
+        </article>
+
+        <article class="panel" style="--step: '02'">
+          <div class="panel-kicker">Baseline</div>
+          <h2>Check normal validity</h2>
+          <p class="section-copy">Certificate Transparency is not a replacement for normal TLS validation. The hostname still needs to match, and the chain still needs to lead back to a trusted root.</p>
+          <p class="resource-row"><a href="https://certificate.transparency.dev/howctworks/#how-certificate-transparency-fits-in-web-public-key-infrastructure" target="_blank" rel="noreferrer">Web PKI background</a></p>
+          <div id="validation" class="empty">Hostname and chain checks are separate from CT.</div>
+        </article>
+
+        <article class="panel wide" style="--step: '03'">
+          <div class="panel-kicker">Promises</div>
+          <h2>Read the SCT promises</h2>
+          <p class="section-copy">A Signed Certificate Timestamp is a log’s signed promise that it will include a certificate or precertificate. Embedded SCTs usually point at a precertificate, so this tool rebuilds that CT leaf before asking the log for proof.</p>
+          <p class="resource-row"><a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.2" target="_blank" rel="noreferrer">RFC 6962: Signed Certificate Timestamp</a></p>
+          <div id="scts" class="empty">Signed Certificate Timestamps will appear as log cards.</div>
+        </article>
+
+        <article class="panel wide proof-stage" style="--step: '04'">
+          <div class="panel-kicker">Proof</div>
+          <h2>Ask a log for Merkle proof</h2>
+          <p class="section-copy">The log returns a short audit path instead of the whole tree. Combining the leaf hash with those sibling hashes should recreate the signed tree head root exactly.</p>
+          <p class="resource-row">
+            <a href="https://www.rfc-editor.org/rfc/rfc6962#section-2.1.1" target="_blank" rel="noreferrer">Merkle audit paths</a>
+            <a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.5" target="_blank" rel="noreferrer">Signed tree heads</a>
+          </p>
+          <div class="proof-rail" aria-hidden="true">
+            <span>certificate bytes</span>
+            <span>SCT timestamp</span>
+            <span>Merkle leaf</span>
+            <span>audit path</span>
+            <span>tree root</span>
+          </div>
+          <div id="proofs" class="empty">Proof attempts will make the exact boundary visible.</div>
+        </article>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
