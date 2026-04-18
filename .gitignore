@@ -1,1 +1,32 @@
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local tool state
 .playwright-cli/
+
+# Go build/test artifacts
+bin/
+coverage.out
+*.test
+
+# Deployment build artifacts
+dist/
+
+# Terraform local state and generated files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
