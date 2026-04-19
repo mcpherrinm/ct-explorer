@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	cttypes "github.com/google/certificate-transparency-go"
@@ -90,9 +91,22 @@ func (a *Analyzer) Analyze(ctx context.Context, rawURL string) (*Report, error) 
 		},
 	}
 
-	for _, sourced := range sctSources {
+	report.SCTs = a.analyzeSCTs(ctx, sctSources, logMap, certs)
+
+	if len(report.SCTs) == 0 {
+		report.ProofNotes = append(report.ProofNotes, "No SCTs were found in the certificate or TLS handshake. Some deployments deliver SCTs through stapled OCSP; this prototype does not parse OCSP SCTs yet.")
+	}
+
+	return report, nil
+}
+
+func (a *Analyzer) analyzeSCTs(ctx context.Context, sctSources []sourcedSCT, logMap map[string]LogInfo, certs []*x509.Certificate) []SCTReport {
+	reports := make([]SCTReport, len(sctSources))
+	var wg sync.WaitGroup
+
+	for i, sourced := range sctSources {
 		sct := sourced.SCT
-		sctReport := SCTReport{
+		reports[i] = SCTReport{
 			Source:       sourced.Source,
 			Version:      int(sct.Version),
 			LogID:        base64.StdEncoding.EncodeToString(sct.LogID[:]),
@@ -104,37 +118,40 @@ func (a *Analyzer) Analyze(ctx context.Context, rawURL string) (*Report, error) 
 			HashAlg:      sct.HashAlgorithm,
 		}
 
-		if logInfo, ok := logMap[sctReport.LogID]; ok {
-			sctReport.Log = &LogSummary{
-				Description: logInfo.Description,
-				URL:         logInfo.URL,
-				Operator:    logInfo.Operator,
-				State:       logInfo.State,
-			}
-			proof, err := a.tryProof(ctx, logInfo.URL, certs, sct, sourced.Source)
-			if err != nil {
-				sctReport.Proof = &ProofReport{
-					Status:      "not-proven",
-					Explanation: err.Error(),
-				}
-			} else {
-				sctReport.Proof = proof
-			}
-		} else {
-			sctReport.Proof = &ProofReport{
+		logInfo, ok := logMap[reports[i].LogID]
+		if !ok {
+			reports[i].Proof = &ProofReport{
 				Status:      "unknown-log",
 				Explanation: "the SCT log ID was not found in the current Chrome CT log list fetched by the backend",
 			}
+			continue
 		}
 
-		report.SCTs = append(report.SCTs, sctReport)
+		reports[i].Log = &LogSummary{
+			Description: logInfo.Description,
+			URL:         logInfo.URL,
+			Operator:    logInfo.Operator,
+			State:       logInfo.State,
+		}
+
+		wg.Add(1)
+		go func(i int, sourced sourcedSCT, logInfo LogInfo) {
+			defer wg.Done()
+
+			proof, err := a.tryProof(ctx, logInfo.URL, certs, sourced.SCT, sourced.Source)
+			if err != nil {
+				reports[i].Proof = &ProofReport{
+					Status:      "not-proven",
+					Explanation: err.Error(),
+				}
+				return
+			}
+			reports[i].Proof = proof
+		}(i, sourced, logInfo)
 	}
 
-	if len(report.SCTs) == 0 {
-		report.ProofNotes = append(report.ProofNotes, "No SCTs were found in the certificate or TLS handshake. Some deployments deliver SCTs through stapled OCSP; this prototype does not parse OCSP SCTs yet.")
-	}
-
-	return report, nil
+	wg.Wait()
+	return reports
 }
 
 func (a *Analyzer) tryProof(ctx context.Context, logURL string, chain []*x509.Certificate, sct SignedCertificateTimestamp, source string) (*ProofReport, error) {
