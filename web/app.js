@@ -162,6 +162,25 @@ function renderMerklePath(proof) {
   const stepsFromRoot = proof.audit_steps.slice().reverse();
   const leaf = shortHash(proof.leaf_hash);
   const root = shortHash(proof.tree_head || "");
+  const mobileSteps = proof.audit_steps.map((step, index) => {
+    const currentHash = index === 0 ? proof.leaf_hash : proof.audit_steps[index - 1].parent_hash;
+    return `
+      <li>
+        <div class="audit-step-title">
+          <b>L${step.level + 1}</b>
+          <span>${escapeHTML(step.sibling_side)} sibling</span>
+        </div>
+        <dl>
+          <dt>Current</dt>
+          <dd>${escapeHTML(shortHash(currentHash))}</dd>
+          <dt>Sibling</dt>
+          <dd>${escapeHTML(shortHash(step.sibling_hash))}</dd>
+          <dt>Parent</dt>
+          <dd>${escapeHTML(shortHash(step.parent_hash))}</dd>
+        </dl>
+      </li>
+    `;
+  }).join("");
 
   return `
     <div class="merkle-tree" aria-label="Verified Merkle audit path as a tree">
@@ -194,6 +213,17 @@ function renderMerklePath(proof) {
         <b>certificate leaf</b>
         <span>${escapeHTML(leaf)}</span>
       </div>
+      <div class="audit-timeline">
+        <div class="audit-endpoint">
+          <b>Leaf</b>
+          <span>${escapeHTML(leaf)}</span>
+        </div>
+        <ol>${mobileSteps}</ol>
+        <div class="audit-endpoint verified">
+          <b>Signed root</b>
+          <span>${escapeHTML(root)}</span>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -212,10 +242,24 @@ function renderHashTranscript(proof) {
     return "";
   }
 
+  const mobileRows = [];
   const rows = proof.audit_steps.map((step, index) => {
     const currentHash = index === 0 ? proof.leaf_hash : proof.audit_steps[index - 1].parent_hash;
     const left = step.sibling_side === "left" ? step.sibling_hash : currentHash;
     const right = step.sibling_side === "right" ? step.sibling_hash : currentHash;
+    mobileRows.push(`
+      <section class="transcript-card">
+        <h4>L${step.level + 1}</h4>
+        <dl>
+          <dt>Left input</dt>
+          <dd><code>${escapeHTML(left)}</code></dd>
+          <dt>Right input</dt>
+          <dd><code>${escapeHTML(right)}</code></dd>
+          <dt>SHA-256 parent</dt>
+          <dd><code>${escapeHTML(step.parent_hash)}</code></dd>
+        </dl>
+      </section>
+    `);
     return `
       <tr>
         <td>L${step.level + 1}</td>
@@ -253,6 +297,7 @@ function renderHashTranscript(proof) {
           <tbody>${rows}</tbody>
         </table>
       </div>
+      <div class="transcript-cards">${mobileRows.join("")}</div>
     </details>
   `;
 }
