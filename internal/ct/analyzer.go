@@ -61,9 +61,11 @@ func (a *Analyzer) Analyze(ctx context.Context, rawURL string) (*Report, error) 
 	}
 
 	leaf := certs[0]
+	embeddedSCTs := ParseEmbeddedSCTs(leaf)
+	tlsSCTReports := ParseTLSSCTs(tlsSCTs)
 	sctSources := append(
-		sourcedSCTs(ParseEmbeddedSCTs(leaf), "embedded certificate extension"),
-		sourcedSCTs(ParseTLSSCTs(tlsSCTs), "TLS handshake extension")...,
+		sourcedSCTs(embeddedSCTs, "embedded certificate extension"),
+		sourcedSCTs(tlsSCTReports, "TLS handshake extension")...,
 	)
 	logs, logErr := a.logs.Load(ctx)
 	logMap := logs.ByID()
@@ -77,7 +79,7 @@ func (a *Analyzer) Analyze(ctx context.Context, rawURL string) (*Report, error) 
 			Fetched:  time.Now().UTC(),
 			LogError: errorString(logErr),
 		},
-		Certificate: certificateSummary(leaf),
+		Certificate: certificateSummary(leaf, len(embeddedSCTs), len(tlsSCTReports)),
 		Chain:       chainSummary(certs),
 		Validation:  validationSummary(leaf, target.Host, verifiedChains, verifyErr),
 		SCTs:        make([]SCTReport, 0, len(sctSources)),
@@ -304,24 +306,27 @@ func sourcedSCTs(scts []SignedCertificateTimestamp, source string) []sourcedSCT 
 	return out
 }
 
-func certificateSummary(cert *x509.Certificate) CertificateSummary {
+func certificateSummary(cert *x509.Certificate, embeddedSCTCount, tlsSCTCount int) CertificateSummary {
 	rawHash := sha256.Sum256(cert.Raw)
 	tbsHash := sha256.Sum256(cert.RawTBSCertificate)
 	spkiHash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
 
 	return CertificateSummary{
-		Subject:       cert.Subject.String(),
-		Issuer:        cert.Issuer.String(),
-		SerialNumber:  cert.SerialNumber.String(),
-		NotBefore:     cert.NotBefore.UTC(),
-		NotAfter:      cert.NotAfter.UTC(),
-		DNSNames:      append([]string(nil), cert.DNSNames...),
-		SHA256:        hex.EncodeToString(rawHash[:]),
-		SHA256Base64:  base64.StdEncoding.EncodeToString(rawHash[:]),
-		TBSSHA256:     hex.EncodeToString(tbsHash[:]),
-		SPKISHA256:    hex.EncodeToString(spkiHash[:]),
-		SignatureAlgo: cert.SignatureAlgorithm.String(),
-		PublicKeyAlgo: cert.PublicKeyAlgorithm.String(),
+		Subject:                     cert.Subject.String(),
+		Issuer:                      cert.Issuer.String(),
+		SerialNumber:                cert.SerialNumber.String(),
+		NotBefore:                   cert.NotBefore.UTC(),
+		NotAfter:                    cert.NotAfter.UTC(),
+		DNSNames:                    append([]string(nil), cert.DNSNames...),
+		SHA256:                      hex.EncodeToString(rawHash[:]),
+		SHA256Base64:                base64.StdEncoding.EncodeToString(rawHash[:]),
+		TBSSHA256:                   hex.EncodeToString(tbsHash[:]),
+		SPKISHA256:                  hex.EncodeToString(spkiHash[:]),
+		SignatureAlgo:               cert.SignatureAlgorithm.String(),
+		PublicKeyAlgo:               cert.PublicKeyAlgorithm.String(),
+		EmbeddedSCTExtensionPresent: embeddedSCTCount > 0,
+		EmbeddedSCTCount:            embeddedSCTCount,
+		TLSSCTCount:                 tlsSCTCount,
 	}
 }
 

@@ -49,17 +49,7 @@ function renderReport(report) {
   const cert = report.certificate;
   setStatus(`Fetched ${report.target.server} at ${formatDate(report.target.fetched)}. Found ${report.scts.length} SCT${report.scts.length === 1 ? "" : "s"}.`);
 
-  certificateEl.className = "facts";
-  certificateEl.innerHTML = [
-    fact("Subject", cert.subject),
-    fact("Issuer", cert.issuer),
-    fact("Valid From", formatDate(cert.not_before)),
-    fact("Valid Until", formatDate(cert.not_after)),
-    fact("Certificate SHA-256", cert.sha256),
-    fact("TBS SHA-256", cert.tbs_sha256),
-    fact("SPKI SHA-256", cert.spki_sha256),
-    fact("Names", (cert.dns_names || []).slice(0, 12).join(", ") || "No DNS names in certificate"),
-  ].join("");
+  renderCertificateSummary(report);
 
   validationEl.className = "facts";
   validationEl.innerHTML = `
@@ -74,6 +64,43 @@ function renderReport(report) {
 
   renderSCTs(report.scts);
   renderProofs(report);
+}
+
+function renderCertificateSummary(report) {
+  const cert = report.certificate;
+  const embeddedCount = cert.embedded_sct_count || 0;
+  const tlsCount = cert.tls_sct_count || 0;
+  const delivery = [
+    embeddedCount ? "certificate extension" : "",
+    tlsCount ? "TLS handshake" : "",
+  ].filter(Boolean).join(" + ") || "No SCTs delivered";
+
+  certificateEl.className = "facts cert-summary";
+  certificateEl.innerHTML = [
+    factGroup("Identity", [
+      fact("Subject", cert.subject),
+      fact("Issuer", cert.issuer),
+      fact("Serial", cert.serial_number),
+      fact("Names", (cert.dns_names || []).slice(0, 12).join(", ") || "No DNS names in certificate"),
+    ]),
+    factGroup("Validity", [
+      fact("Valid From", formatDate(cert.not_before)),
+      fact("Valid Until", formatDate(cert.not_after)),
+      fact("Signature", cert.signature_algo),
+      fact("Public Key", cert.public_key_algo),
+    ]),
+    factGroup("Fingerprints", [
+      fact("Certificate SHA-256", cert.sha256),
+      fact("TBS SHA-256", cert.tbs_sha256),
+      fact("SPKI SHA-256", cert.spki_sha256),
+    ]),
+    factGroup("Certificate Transparency", [
+      fact("SCT Extension", cert.embedded_sct_extension_present ? "present" : "missing"),
+      fact("Embedded SCTs", String(embeddedCount)),
+      fact("TLS SCTs", String(tlsCount)),
+      fact("Delivery", delivery),
+    ]),
+  ].join("");
 }
 
 function renderSCTs(scts) {
@@ -232,6 +259,15 @@ function renderHashTranscript(proof) {
 
 function fact(label, value) {
   return `<div class="fact"><b>${escapeHTML(label)}</b><span>${escapeHTML(value || "—")}</span></div>`;
+}
+
+function factGroup(title, rows) {
+  return `
+    <section class="fact-group">
+      <h3>${escapeHTML(title)}</h3>
+      ${rows.join("")}
+    </section>
+  `;
 }
 
 function setStatus(message) {

@@ -21,18 +21,21 @@ type Target struct {
 }
 
 type CertificateSummary struct {
-	Subject       string    `json:"subject"`
-	Issuer        string    `json:"issuer"`
-	SerialNumber  string    `json:"serial_number"`
-	NotBefore     time.Time `json:"not_before"`
-	NotAfter      time.Time `json:"not_after"`
-	DNSNames      []string  `json:"dns_names"`
-	SHA256        string    `json:"sha256"`
-	SHA256Base64  string    `json:"sha256_base64"`
-	TBSSHA256     string    `json:"tbs_sha256"`
-	SPKISHA256    string    `json:"spki_sha256"`
-	SignatureAlgo string    `json:"signature_algo"`
-	PublicKeyAlgo string    `json:"public_key_algo"`
+	Subject                     string    `json:"subject"`
+	Issuer                      string    `json:"issuer"`
+	SerialNumber                string    `json:"serial_number"`
+	NotBefore                   time.Time `json:"not_before"`
+	NotAfter                    time.Time `json:"not_after"`
+	DNSNames                    []string  `json:"dns_names"`
+	SHA256                      string    `json:"sha256"`
+	SHA256Base64                string    `json:"sha256_base64"`
+	TBSSHA256                   string    `json:"tbs_sha256"`
+	SPKISHA256                  string    `json:"spki_sha256"`
+	SignatureAlgo               string    `json:"signature_algo"`
+	PublicKeyAlgo               string    `json:"public_key_algo"`
+	EmbeddedSCTExtensionPresent bool      `json:"embedded_sct_extension_present"`
+	EmbeddedSCTCount            int       `json:"embedded_sct_count"`
+	TLSSCTCount                 int       `json:"tls_sct_count"`
 }
 
 type ChainCertificate struct {

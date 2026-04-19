@@ -379,6 +379,26 @@ h3 {
   border-bottom: 0;
 }
 
+.cert-summary {
+  gap: 10px;
+}
+
+.fact-group {
+  border-bottom: 1px solid var(--line);
+}
+
+.fact-group:last-child {
+  border-bottom: 0;
+}
+
+.fact-group h3 {
+  margin: 10px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .fact b,
 .mini,
 .badge,
