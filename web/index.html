@@ -72,7 +72,7 @@
           <h2>Fetch the certificate</h2>
           <p class="section-copy">The trace starts the same way a browser does: open a TLS connection, receive the certificate chain, and inspect the leaf certificate for the domain name, issuer, validity window, and CT data.</p>
           <p class="resource-row"><a href="https://certificate.transparency.dev/howctworks/" target="_blank" rel="noreferrer">How CT fits into Web PKI</a></p>
-          <div id="certificate" class="empty">The TLS leaf certificate will land here.</div>
+          <div id="certificate" class="empty"></div>
         </article>
 
         <article class="panel" style="--step: '02'">
@@ -80,7 +80,7 @@
           <h2>Check normal validity</h2>
           <p class="section-copy">Certificate Transparency is not a replacement for normal TLS validation. The hostname still needs to match, and the chain still needs to lead back to a trusted root.</p>
           <p class="resource-row"><a href="https://certificate.transparency.dev/howctworks/#how-certificate-transparency-fits-in-web-public-key-infrastructure" target="_blank" rel="noreferrer">Web PKI background</a></p>
-          <div id="validation" class="empty">Hostname and chain checks are separate from CT.</div>
+          <div id="validation" class="empty"></div>
         </article>
 
         <article class="panel wide" style="--step: '03'">
@@ -88,7 +88,7 @@
           <h2>Read the SCT promises</h2>
           <p class="section-copy">A Signed Certificate Timestamp is a log’s signed promise that it will include a certificate or precertificate. Embedded SCTs usually point at a precertificate, so this tool rebuilds that CT leaf before asking the log for proof.</p>
           <p class="resource-row"><a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.2" target="_blank" rel="noreferrer">RFC 6962: Signed Certificate Timestamp</a></p>
-          <div id="scts" class="empty">Signed Certificate Timestamps will appear as log cards.</div>
+          <div id="scts" class="empty"></div>
         </article>
 
         <article class="panel wide proof-stage" style="--step: '04'">
@@ -99,7 +99,7 @@
             <a href="https://www.rfc-editor.org/rfc/rfc6962#section-2.1.1" target="_blank" rel="noreferrer">Merkle audit paths</a>
             <a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.5" target="_blank" rel="noreferrer">Signed tree heads</a>
           </p>
-          <div id="proofs" class="empty">Proof attempts will make the exact boundary visible.</div>
+          <div id="proofs" class="empty"></div>
         </article>
       </section>
     </main>
