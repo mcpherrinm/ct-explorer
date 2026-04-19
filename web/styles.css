@@ -223,21 +223,31 @@ h3 {
   text-align: left;
 }
 
+.proof-node::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 6px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
 .proof-node:last-child {
   border-right: 0;
 }
 
 .sct-node,
-.path-node-hero {
-  background: var(--mint-2);
-}
-
-.leaf-node {
-  background: var(--mint);
-}
-
+.leaf-node,
+.path-node-hero,
 .root-node {
-  background: linear-gradient(180deg, var(--mint) 0 50%, var(--paper) 50% 100%);
+  background: var(--paper);
+}
+
+.sct-node::before,
+.leaf-node::before,
+.path-node-hero::before,
+.root-node::before {
+  background: var(--mint);
 }
 
 .node-kicker,
@@ -265,9 +275,6 @@ h3 {
 }
 
 .status-band {
-  position: sticky;
-  top: 14px;
-  z-index: 10;
   max-width: 980px;
   margin: 32px auto 58px;
   border: 1px solid var(--line);
