@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CT Field Glass</title>
+    <title>Certificate Transparency Explorer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css?family=Inter:700,800&display=swap" rel="stylesheet" />
@@ -12,20 +12,16 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="/">Certificate Transparency</a>
+      <a class="brand" href="/">Certificate Transparency Explorer</a>
       <nav aria-label="Primary">
-        <a href="#certificate">Certificate</a>
-        <a href="#scts">SCTs</a>
-        <a href="#proofs">Proof</a>
-        <a class="nav-button" href="https://certificate.transparency.dev/">CT site</a>
+        <a class="nav-button" href="https://certificate.transparency.dev/">Learn More</a>
       </nav>
     </header>
 
     <main class="shell">
       <section class="intro">
         <div class="intro-copy">
-          <p class="eyebrow">Certificate Transparency verifier</p>
-          <h1>Trace a certificate into the public record.</h1>
+          <h1>Trace a certificate through CT logs.</h1>
           <form id="lookup-form" class="lookup">
             <label for="target">Website</label>
             <div class="lookup-row">
@@ -114,6 +110,11 @@
         </article>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <p>Made with love by Jordan Wright (and Claude). <a href="https://github.com/jordan-wright/ct-explorer">GitHub repository</a></p>
+      <p>Not affiliated with <a href="https://certificate.transparency.dev/">certificate.transparency.dev</a> - just a fan.</p>
+    </footer>
 
     <script src="/app.js"></script>
   </body>

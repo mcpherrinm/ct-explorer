@@ -76,6 +76,28 @@ input {
   padding: 10px 15px;
 }
 
+.site-footer {
+  width: min(980px, calc(100% - 40px));
+  margin: 0 auto 34px;
+  padding-top: 18px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0 0 6px;
+}
+
+.site-footer p:last-child {
+  margin-bottom: 0;
+}
+
+.site-footer a {
+  color: var(--ink);
+}
+
 .shell {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
