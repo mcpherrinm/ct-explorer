@@ -54,9 +54,8 @@ function renderReport(report) {
   validationEl.className = "facts";
   validationEl.innerHTML = `
     <div class="badge-row">
-      <span class="badge ${report.validation.hostname_ok ? "" : "bad"}">${report.validation.hostname_ok ? "hostname matches" : "hostname failed"}</span>
-      <span class="badge ${report.validation.chain_ok ? "" : "bad"}">${report.validation.chain_ok ? "trusted chain" : "chain failed"}</span>
-      <span class="badge">${report.validation.chains} verified chain${report.validation.chains === 1 ? "" : "s"}</span>
+      <span class="badge ${report.validation.hostname_ok ? "good" : "bad"}">${report.validation.hostname_ok ? "✓ hostname matches" : "hostname failed"}</span>
+      <span class="badge ${report.validation.chain_ok ? "good" : "bad"}">${report.validation.chain_ok ? "✓ certificate is trusted" : "certificate is not trusted"}</span>
     </div>
     ${report.validation.hostname_error ? fact("Hostname error", report.validation.hostname_error) : ""}
     ${report.validation.chain_error ? fact("Chain error", report.validation.chain_error) : ""}
