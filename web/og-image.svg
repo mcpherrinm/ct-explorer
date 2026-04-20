@@ -13,15 +13,16 @@
   <text x="80" y="174" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="64" font-weight="800" letter-spacing="0">Trace a certificate</text>
   <text x="80" y="244" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="64" font-weight="800" letter-spacing="0">through CT logs.</text>
 
-  <text x="80" y="296" fill="#3E3F42" font-family="Helvetica, Arial, sans-serif" font-size="23" letter-spacing="0">Fetch the live certificate, decode SCT promises, and verify the path</text>
-  <text x="80" y="330" fill="#3E3F42" font-family="Helvetica, Arial, sans-serif" font-size="23" letter-spacing="0">against the log's Signed Tree Head.</text>
+  <text x="80" y="296" fill="#3E3F42" font-family="Helvetica, Arial, sans-serif" font-size="23" letter-spacing="0">Verify that a certificate shows up</text>
+  <text x="80" y="330" fill="#3E3F42" font-family="Helvetica, Arial, sans-serif" font-size="23" letter-spacing="0">in transparency logs.</text>
 
   <rect x="80" y="392" width="1040" height="96" fill="#FFFFFF" stroke="#1A1B1F" stroke-width="2"/>
   <path d="M288 392V488M496 392V488M704 392V488M912 392V488" stroke="#1A1B1F" stroke-width="2"/>
-  <rect x="289" y="393" width="206" height="12" fill="#EDFFFB"/>
-  <rect x="497" y="393" width="206" height="12" fill="#EDFFFB"/>
-  <rect x="705" y="393" width="206" height="12" fill="#EDFFFB"/>
-  <rect x="913" y="393" width="206" height="12" fill="#EDFFFB"/>
+  <rect x="81" y="393" width="206" height="6" fill="#D8FBF4"/>
+  <rect x="289" y="393" width="206" height="6" fill="#D8FBF4"/>
+  <rect x="497" y="393" width="206" height="6" fill="#D8FBF4"/>
+  <rect x="705" y="393" width="206" height="6" fill="#D8FBF4"/>
+  <rect x="913" y="393" width="206" height="6" fill="#D8FBF4"/>
 
   <text x="106" y="434" fill="#3E3F42" font-family="SFMono-Regular, Consolas, Liberation Mono, monospace" font-size="17" letter-spacing="0">TLS</text>
   <text x="106" y="467" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="0">certificate</text>
@@ -30,7 +31,7 @@
   <text x="314" y="467" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="0">timestamp</text>
 
   <text x="522" y="434" fill="#3E3F42" font-family="SFMono-Regular, Consolas, Liberation Mono, monospace" font-size="17" letter-spacing="0">LEAF</text>
-  <text x="522" y="467" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="0">Merkle leaf</text>
+  <text x="522" y="467" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="0">leaf hash</text>
 
   <text x="730" y="434" fill="#3E3F42" font-family="SFMono-Regular, Consolas, Liberation Mono, monospace" font-size="17" letter-spacing="0">PATH</text>
   <text x="730" y="467" fill="#1A1B1F" font-family="Inter, Helvetica, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="0">audit path</text>

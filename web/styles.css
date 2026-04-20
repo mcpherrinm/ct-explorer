@@ -251,7 +251,7 @@ h3 {
   inset: 0 0 auto;
   height: 6px;
   border-bottom: 1px solid var(--line);
-  background: var(--paper);
+  background: var(--mint);
 }
 
 .proof-node:last-child {
@@ -263,13 +263,6 @@ h3 {
 .path-node-hero,
 .root-node {
   background: var(--paper);
-}
-
-.sct-node::before,
-.leaf-node::before,
-.path-node-hero::before,
-.root-node::before {
-  background: var(--mint);
 }
 
 .node-kicker,
