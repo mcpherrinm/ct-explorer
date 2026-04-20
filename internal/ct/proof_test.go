@@ -181,6 +181,22 @@ func TestGetProofByHashSnapshotForCTJordanWrightDotCom(t *testing.T) {
 	}
 }
 
+func TestProofByHashURL(t *testing.T) {
+	leafHash, err := base64.StdEncoding.DecodeString("mtPLaiiDzbtvBS8vUQdI5QPjib1PG+YCEnwqkW1CShk=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := ProofByHashURL("https://ct.googleapis.com/logs/us1/argon2026/", leafHash, 411874972)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "https://ct.googleapis.com/logs/us1/argon2026/ct/v1/get-proof-by-hash?hash=mtPLaiiDzbtvBS8vUQdI5QPjib1PG%2BYCEnwqkW1CShk%3D&tree_size=411874972"
+	if got != want {
+		t.Fatalf("ProofByHashURL() = %q, want %q", got, want)
+	}
+}
+
 func leafHash(data []byte) []byte {
 	h := sha256.New()
 	h.Write([]byte{0})

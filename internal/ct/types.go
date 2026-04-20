@@ -81,6 +81,7 @@ type ProofReport struct {
 	Status      string      `json:"status"`
 	Explanation string      `json:"explanation"`
 	LeafHash    string      `json:"leaf_hash,omitempty"`
+	ProofURL    string      `json:"proof_url,omitempty"`
 	TreeSize    uint64      `json:"tree_size,omitempty"`
 	TreeHead    string      `json:"tree_head,omitempty"`
 	LeafIndex   uint64      `json:"leaf_index,omitempty"`

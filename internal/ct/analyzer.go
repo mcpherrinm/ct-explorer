@@ -173,10 +173,15 @@ func (a *Analyzer) tryProof(ctx context.Context, logURL string, chain []*x509.Ce
 
 	treeHead := sth.SHA256RootHash.Base64String()
 	rootOK, auditSteps := VerifyAuditPath(hash, auditPath, leafIndex, sth.TreeSize, treeHead)
+	proofURL, err := ProofByHashURL(logURL, hash, sth.TreeSize)
+	if err != nil {
+		return nil, fmt.Errorf("could not build inclusion proof URL: %w", err)
+	}
 	return &ProofReport{
 		Status:      candidate.status,
 		Explanation: candidate.explanation,
 		LeafHash:    base64.StdEncoding.EncodeToString(hash),
+		ProofURL:    proofURL,
 		TreeSize:    sth.TreeSize,
 		TreeHead:    treeHead,
 		LeafIndex:   leafIndex,

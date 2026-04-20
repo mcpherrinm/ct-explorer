@@ -7,6 +7,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	cttypes "github.com/google/certificate-transparency-go"
 	ctclient "github.com/google/certificate-transparency-go/client"
@@ -39,6 +42,21 @@ func GetProofByHash(ctx context.Context, client *http.Client, logURL string, lea
 		auditPath = append(auditPath, base64.StdEncoding.EncodeToString(node))
 	}
 	return uint64(proof.LeafIndex), auditPath, nil
+}
+
+func ProofByHashURL(logURL string, leafHash []byte, treeSize uint64) (string, error) {
+	baseURL, err := url.Parse(strings.TrimRight(logURL, "/") + "/ct/v1/get-proof-by-hash")
+	if err != nil {
+		return "", err
+	}
+	if baseURL.Host == "" || (baseURL.Scheme != "http" && baseURL.Scheme != "https") {
+		return "", fmt.Errorf("unsupported CT log URL %q", logURL)
+	}
+	query := baseURL.Query()
+	query.Set("hash", base64.StdEncoding.EncodeToString(leafHash))
+	query.Set("tree_size", strconv.FormatUint(treeSize, 10))
+	baseURL.RawQuery = query.Encode()
+	return baseURL.String(), nil
 }
 
 func sha256Base64(in []byte) string {
