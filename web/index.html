@@ -4,6 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Certificate Transparency Explorer</title>
+    <meta name="description" content="Trace a live HTTPS certificate through Certificate Transparency logs, decode SCTs, and verify inclusion against a log's Signed Tree Head." />
+    <link rel="canonical" href="https://ct.jordan-wright.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Certificate Transparency Explorer" />
+    <meta property="og:description" content="Trace a live HTTPS certificate through Certificate Transparency logs and verify inclusion against a log's Signed Tree Head." />
+    <meta property="og:url" content="https://ct.jordan-wright.com/" />
+    <meta property="og:site_name" content="Certificate Transparency Explorer" />
+    <meta property="og:image" content="https://ct.jordan-wright.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Certificate Transparency proof flow from TLS certificate to Signed Tree Head." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Certificate Transparency Explorer" />
+    <meta name="twitter:description" content="Trace a live HTTPS certificate through Certificate Transparency logs and verify inclusion against a log's Signed Tree Head." />
+    <meta name="twitter:image" content="https://ct.jordan-wright.com/og-image.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css?family=Inter:700,800&display=swap" rel="stylesheet" />
@@ -29,34 +44,34 @@
               <button type="submit">Trace</button>
             </div>
           </form>
-          <p class="plain-note">Fetch the live certificate, decode SCT promises, rebuild the CT leaf, and verify the Merkle path against the log’s signed tree head.</p>
+          <p class="plain-note">Fetch the live certificate, decode SCT promises, and verify inclusion against the log’s Signed Tree Head.</p>
         </div>
         <div class="plate" aria-hidden="true">
           <div class="proof-map">
             <div class="proof-node browser-node">
               <span class="node-kicker">TLS</span>
-              <strong>website certificate</strong>
-              <small>leaf + chain</small>
+              <strong>certificate</strong>
+              <small>served by the domain</small>
             </div>
             <div class="proof-node sct-node">
               <span class="node-kicker">SCT</span>
-              <strong>signed promise</strong>
-              <small>log id + timestamp</small>
+              <strong>timestamp</strong>
+              <small>a log's promise</small>
             </div>
             <div class="proof-node leaf-node">
               <span class="node-kicker">Leaf</span>
-              <strong>precert hash</strong>
-              <small>00 || MerkleTreeLeaf</small>
+              <strong>Merkle leaf</strong>
+              <small>rebuilt from cert data</small>
             </div>
             <div class="proof-node path-node-hero">
               <span class="node-kicker">Path</span>
-              <strong>audit siblings</strong>
-              <small>left/right at each level</small>
+              <strong>audit path</strong>
+              <small>hashes up the tree</small>
             </div>
             <div class="proof-node root-node">
               <span class="node-kicker">STH</span>
-              <strong>same root</strong>
-              <small>signed tree head</small>
+              <strong>tree head</strong>
+              <small>matching root hash</small>
             </div>
           </div>
         </div>
@@ -86,18 +101,18 @@
         <article class="panel wide" style="--step: '03'">
           <div class="panel-kicker">Promises</div>
           <h2>Read the SCT promises</h2>
-          <p class="section-copy">A Signed Certificate Timestamp is a log’s signed promise that it will include a certificate or precertificate. Embedded SCTs usually point at a precertificate, so this tool rebuilds that CT leaf before asking the log for proof.</p>
+          <p class="section-copy">A Signed Certificate Timestamp is a log’s promise to add a certificate or precertificate. A precertificate is submitted to a CT log before issuance, so the final certificate can carry the log’s timestamp. Embedded SCTs usually point at a precertificate, so this tool rebuilds that CT leaf before asking the log for inclusion proof.</p>
           <p class="resource-row"><a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.2" target="_blank" rel="noreferrer">RFC 6962: Signed Certificate Timestamp</a></p>
           <div id="scts" class="empty"></div>
         </article>
 
         <article class="panel wide proof-stage" style="--step: '04'">
           <div class="panel-kicker">Proof</div>
-          <h2>Ask a log for Merkle proof</h2>
-          <p class="section-copy">The log returns a short audit path instead of the whole tree. Combining the leaf hash with those sibling hashes should recreate the signed tree head root exactly.</p>
+          <h2>Ask a log for an inclusion proof</h2>
+          <p class="section-copy">CT logs are append-only ledgers backed by Merkle trees. Each certificate or precertificate becomes a SHA-256 leaf hash. The log returns an audit path: the sibling hashes needed to recompute the Signed Tree Head root.</p>
           <p class="resource-row">
             <a href="https://www.rfc-editor.org/rfc/rfc6962#section-2.1.1" target="_blank" rel="noreferrer">Merkle audit paths</a>
-            <a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.5" target="_blank" rel="noreferrer">Signed tree heads</a>
+            <a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.5" target="_blank" rel="noreferrer">Signed Tree Heads</a>
           </p>
           <div id="proofs" class="empty"></div>
         </article>

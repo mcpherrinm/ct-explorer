@@ -86,8 +86,8 @@ func (a *Analyzer) Analyze(ctx context.Context, rawURL string) (*Report, error) 
 		SCTs:        make([]SCTReport, 0, len(sctSources)),
 		ProofNotes: []string{
 			"Certificate Transparency logs prove inclusion of a Merkle tree leaf, not a domain name.",
-			"SCTs delivered through the TLS handshake can refer directly to the final X.509 certificate; embedded SCTs usually refer to the logged precertificate.",
-			"This explorer tries the direct X.509 leaf path when a log is reachable, then labels the result so the proof boundary is visible.",
+			"SCTs delivered through the TLS handshake can refer directly to the final certificate; embedded SCTs usually refer to the logged precertificate.",
+			"TLS-delivered SCTs usually point at the final certificate. Embedded SCTs usually point at a precertificate, so this explorer rebuilds that leaf before checking inclusion.",
 		},
 	}
 
@@ -211,7 +211,7 @@ func proofCandidateForSCT(chain []*x509.Certificate, sct SignedCertificateTimest
 		}
 		return proofCandidate{
 			status:      "proven-x509-leaf",
-			explanation: "the log returned an inclusion proof for a Merkle leaf built from the final certificate DER and this SCT timestamp",
+			explanation: "the log returned an inclusion proof for the final certificate leaf",
 			leafHash:    hash,
 		}, nil
 	}
@@ -227,7 +227,7 @@ func proofCandidateForSCT(chain []*x509.Certificate, sct SignedCertificateTimest
 	}
 	return proofCandidate{
 		status:      "proven-precert-leaf",
-		explanation: "the log returned an inclusion proof for the precertificate leaf rebuilt by the Certificate Transparency Go library from the embedded SCT timestamp and certificate chain",
+		explanation: "the log returned an inclusion proof for the rebuilt precertificate leaf",
 		leafHash:    hash,
 	}, nil
 }

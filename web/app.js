@@ -132,7 +132,7 @@ function renderProofs(report) {
   const proofCards = report.scts.map((sct) => {
     const proof = sct.proof || { status: "not-attempted", explanation: "no proof attempt was available" };
     const proven = proof.status === "proven-x509-leaf" || proof.status === "proven-precert-leaf";
-    const rootText = proof.root_ok ? "Merkle root verified" : "Merkle root not verified";
+    const rootText = proof.root_ok ? "STH root verified" : "STH root not verified";
     return `
       <article class="proof-item ${proven ? "proven" : ""}">
         <h3>${escapeHTML(sct.log?.description || "Unknown log")}</h3>
@@ -185,10 +185,10 @@ function renderMerklePath(proof) {
   return `
     <div class="merkle-tree" aria-label="Verified Merkle audit path as a tree">
       <div class="tree-caption">
-        ${proof.audit_steps.length} sibling hashes rebuild one path from the certificate leaf to the signed tree head.
+        ${proof.audit_steps.length} SHA-256 sibling hashes rebuild one path through the Merkle tree.
       </div>
       <div class="tree-root tree-node">
-        <b>signed root</b>
+        <b>STH root</b>
         <span>${escapeHTML(root)}</span>
       </div>
       <div class="tree-scroll">
@@ -220,7 +220,7 @@ function renderMerklePath(proof) {
         </div>
         <ol>${mobileSteps}</ol>
         <div class="audit-endpoint verified">
-          <b>Signed root</b>
+          <b>STH root</b>
           <span>${escapeHTML(root)}</span>
         </div>
       </div>
@@ -272,9 +272,9 @@ function renderHashTranscript(proof) {
 
   return `
     <details class="hash-transcript">
-      <summary>Show every hash from leaf to signed root</summary>
+      <summary>Show every SHA-256 hash from leaf to STH root</summary>
       <div class="transcript-copy">
-        Start with the reconstructed CT leaf hash, combine each sibling in left/right order, and compare the final parent to the signed tree head root.
+        Start with the reconstructed CT leaf hash, combine each SHA-256 sibling in left/right order, and compare the final parent to the Signed Tree Head root.
       </div>
       <div class="root-check">
         <b>Leaf</b>
