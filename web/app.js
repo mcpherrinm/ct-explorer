@@ -137,7 +137,6 @@ function renderProofs(report) {
         <h3>${escapeHTML(sct.log?.description || "Unknown log")}</h3>
         <div class="badge-row">
           <span class="badge ${proven ? "good" : "bad"}">${proven ? "✓ inclusion proven" : "proof missing"}</span>
-          ${proof.proof_url ? `<a class="badge badge-link" href="${escapeHTML(proof.proof_url)}" target="_blank" rel="noopener noreferrer">raw proof</a>` : ""}
           ${proof.tree_size ? `<span class="badge ${proof.root_ok ? "good" : "bad"}">${proof.root_ok ? `✓ ${rootText}` : rootText}</span>` : ""}
         </div>
         <p>${escapeHTML(proof.explanation)}</p>
@@ -146,6 +145,7 @@ function renderProofs(report) {
         ${proof.leaf_hash ? `<p class="mini">leaf hash ${escapeHTML(proof.leaf_hash)}</p>` : ""}
         ${proof.tree_size ? `<p class="mini">tree size ${proof.tree_size} · leaf index ${proof.leaf_index}</p>` : ""}
         ${proof.audit_path?.length ? `<p class="mini">audit path nodes ${proof.audit_path.length}</p>` : ""}
+        ${proof.proof_url ? `<p class="mini"><a class="plain-link" href="${escapeHTML(proof.proof_url)}" target="_blank" rel="noopener noreferrer">View raw inclusion proof</a></p>` : ""}
       </article>
     `;
   }).join("");
