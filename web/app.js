@@ -121,9 +121,16 @@ function renderSCTs(scts) {
         <p class="mini">timestamp: ${formatDate(sct.timestamp)}</p>
         <p class="mini">signature: ${escapeHTML(sct.hash_alg)} + ${escapeHTML(sct.signature_alg)}</p>
         <p class="mini">log id: ${escapeHTML(sct.log_id)}</p>
+        ${sct.log?.type ? `<p class="mini">api: ${escapeHTML(apiLabel(sct.log.type))}</p>` : ""}
       </article>
     `;
   }).join("");
+}
+
+function apiLabel(type) {
+  if (type === "static-ct-api") return "Static CT API (tiles + checkpoint)";
+  if (type === "rfc6962") return "RFC 6962 (get-sth + get-proof-by-hash)";
+  return type;
 }
 
 function renderProofs(report) {
@@ -132,26 +139,45 @@ function renderProofs(report) {
     const proof = sct.proof || { status: "not-attempted", explanation: "no proof attempt was available" };
     const proven = proof.status === "proven-x509-leaf" || proof.status === "proven-precert-leaf";
     const rootText = proof.root_ok ? "STH root verified" : "STH root not verified";
+    const flavor = proof.api_flavor || sct.log?.type;
     return `
       <article class="proof-item ${proven ? "proven" : ""}">
         <h3>${escapeHTML(sct.log?.description || "Unknown log")}</h3>
         <div class="badge-row">
           <span class="badge ${proven ? "good" : "bad"}">${proven ? "✓ inclusion proven" : "proof missing"}</span>
           ${proof.tree_size ? `<span class="badge ${proof.root_ok ? "good" : "bad"}">${proof.root_ok ? `✓ ${rootText}` : rootText}</span>` : ""}
+          ${flavor ? `<span class="badge">${escapeHTML(apiLabel(flavor))}</span>` : ""}
         </div>
         <p>${escapeHTML(proof.explanation)}</p>
+        ${renderStaticCTBlock(proof)}
         ${renderMerklePath(proof)}
         ${renderHashTranscript(proof)}
         ${proof.leaf_hash ? `<p class="mini">leaf hash ${escapeHTML(proof.leaf_hash)}</p>` : ""}
-        ${proof.tree_size ? `<p class="mini">tree size ${proof.tree_size} · leaf index ${proof.leaf_index}</p>` : ""}
+        ${proof.tree_size ? `<p class="mini">tree size ${proof.tree_size} · leaf index ${proof.leaf_index}${proof.leaf_index_from_sct ? " (from SCT leaf_index extension)" : ""}</p>` : ""}
         ${proof.audit_path?.length ? `<p class="mini">audit path nodes ${proof.audit_path.length}</p>` : ""}
-        ${proof.proof_url ? `<p class="mini"><a class="plain-link" href="${escapeHTML(proof.proof_url)}" target="_blank" rel="noopener noreferrer">View raw inclusion proof</a></p>` : ""}
+        ${proof.proof_url ? `<p class="mini"><a class="plain-link" href="${escapeHTML(proof.proof_url)}" target="_blank" rel="noopener noreferrer">${proof.api_flavor === "static-ct-api" ? "View raw checkpoint" : "View raw inclusion proof"}</a></p>` : ""}
       </article>
     `;
   }).join("");
 
   proofsEl.className = "proof-list";
   proofsEl.innerHTML = notes + (proofCards || `<div class="empty">There were no SCTs to match against logs.</div>`);
+}
+
+function renderStaticCTBlock(proof) {
+  if (proof.api_flavor !== "static-ct-api") return "";
+  const rows = [];
+  if (proof.checkpoint_origin) {
+    rows.push(`<p class="mini">checkpoint origin: ${escapeHTML(proof.checkpoint_origin)}</p>`);
+  }
+  if (proof.checkpoint_body) {
+    rows.push(`<details class="hash-transcript"><summary>Show signed checkpoint body</summary><pre class="checkpoint-body"><code>${escapeHTML(proof.checkpoint_body)}</code></pre></details>`);
+  }
+  if (proof.tile_urls?.length) {
+    const links = proof.tile_urls.map((u) => `<li><a class="plain-link" href="${escapeHTML(u)}" target="_blank" rel="noopener noreferrer">${escapeHTML(u)}</a></li>`).join("");
+    rows.push(`<details class="hash-transcript"><summary>Show ${proof.tile_urls.length} tile${proof.tile_urls.length === 1 ? "" : "s"} fetched to rebuild the audit path</summary><ul class="tile-list">${links}</ul></details>`);
+  }
+  return rows.join("");
 }
 
 function renderMerklePath(proof) {

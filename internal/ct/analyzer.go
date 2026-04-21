@@ -128,21 +128,25 @@ func (a *Analyzer) analyzeSCTs(ctx context.Context, sctSources []sourcedSCT, log
 		}
 
 		reports[i].Log = &LogSummary{
-			Description: logInfo.Description,
-			URL:         logInfo.URL,
-			Operator:    logInfo.Operator,
-			State:       logInfo.State,
+			Description:   logInfo.Description,
+			URL:           logInfo.URL,
+			SubmissionURL: logInfo.SubmissionURL,
+			MonitoringURL: logInfo.MonitoringURL,
+			Operator:      logInfo.Operator,
+			State:         logInfo.State,
+			Type:          logInfo.Type,
 		}
 
 		wg.Add(1)
 		go func(i int, sourced sourcedSCT, logInfo LogInfo) {
 			defer wg.Done()
 
-			proof, err := a.tryProof(ctx, logInfo.URL, certs, sourced.SCT, sourced.Source)
+			proof, err := a.tryProof(ctx, logInfo, certs, sourced.SCT, sourced.Source)
 			if err != nil {
 				reports[i].Proof = &ProofReport{
 					Status:      "not-proven",
 					Explanation: err.Error(),
+					APIFlavor:   logInfo.Type,
 				}
 				return
 			}
@@ -154,7 +158,14 @@ func (a *Analyzer) analyzeSCTs(ctx context.Context, sctSources []sourcedSCT, log
 	return reports
 }
 
-func (a *Analyzer) tryProof(ctx context.Context, logURL string, chain []*x509.Certificate, sct SignedCertificateTimestamp, source string) (*ProofReport, error) {
+func (a *Analyzer) tryProof(ctx context.Context, logInfo LogInfo, chain []*x509.Certificate, sct SignedCertificateTimestamp, source string) (*ProofReport, error) {
+	if logInfo.Type == "static-ct-api" {
+		return a.tryStaticProof(ctx, logInfo, chain, sct, source)
+	}
+	return a.tryRFC6962Proof(ctx, logInfo.URL, chain, sct, source)
+}
+
+func (a *Analyzer) tryRFC6962Proof(ctx context.Context, logURL string, chain []*x509.Certificate, sct SignedCertificateTimestamp, source string) (*ProofReport, error) {
 	sth, err := GetSTH(ctx, a.client, logURL)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch signed tree head from %s: %w", logURL, err)
@@ -180,6 +191,7 @@ func (a *Analyzer) tryProof(ctx context.Context, logURL string, chain []*x509.Ce
 	return &ProofReport{
 		Status:      candidate.status,
 		Explanation: candidate.explanation,
+		APIFlavor:   "rfc6962",
 		LeafHash:    base64.StdEncoding.EncodeToString(hash),
 		ProofURL:    proofURL,
 		TreeSize:    sth.TreeSize,
@@ -188,6 +200,58 @@ func (a *Analyzer) tryProof(ctx context.Context, logURL string, chain []*x509.Ce
 		AuditPath:   auditPath,
 		RootOK:      rootOK,
 		AuditSteps:  auditSteps,
+	}, nil
+}
+
+func (a *Analyzer) tryStaticProof(ctx context.Context, logInfo LogInfo, chain []*x509.Certificate, sct SignedCertificateTimestamp, source string) (*ProofReport, error) {
+	candidate, err := proofCandidateForSCT(chain, sct, source)
+	if err != nil {
+		return nil, err
+	}
+
+	leafIndex, ok := ExtractLeafIndex(sct.Extensions)
+	if !ok {
+		return nil, errors.New("static-ct-api SCT is missing the required leaf_index extension")
+	}
+
+	cp, err := FetchCheckpoint(ctx, a.client, logInfo.MonitoringURL)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch checkpoint from %s: %w", logInfo.MonitoringURL, err)
+	}
+	if leafIndex >= cp.TreeSize {
+		return nil, fmt.Errorf("leaf_index %d is past the current tree size %d", leafIndex, cp.TreeSize)
+	}
+
+	cache := NewTileCache(a.client, logInfo.MonitoringURL)
+	auditPathBytes, err := BuildAuditPath(ctx, cache, leafIndex, cp.TreeSize)
+	if err != nil {
+		return nil, fmt.Errorf("could not assemble audit path from tiles: %w", err)
+	}
+	auditPath := make([]string, 0, len(auditPathBytes))
+	for _, h := range auditPathBytes {
+		auditPath = append(auditPath, base64.StdEncoding.EncodeToString(h))
+	}
+
+	hash := candidate.leafHash[:]
+	treeHead := base64.StdEncoding.EncodeToString(cp.RootHash)
+	rootOK, auditSteps := VerifyAuditPath(hash, auditPath, leafIndex, cp.TreeSize, treeHead)
+
+	return &ProofReport{
+		Status:           candidate.status,
+		Explanation:      candidate.explanation,
+		APIFlavor:        "static-ct-api",
+		LeafHash:         base64.StdEncoding.EncodeToString(hash),
+		ProofURL:         cp.URL,
+		TreeSize:         cp.TreeSize,
+		TreeHead:         treeHead,
+		LeafIndex:        leafIndex,
+		AuditPath:        auditPath,
+		RootOK:           rootOK,
+		AuditSteps:       auditSteps,
+		CheckpointOrigin: cp.Origin,
+		CheckpointBody:   cp.Raw,
+		TileURLs:         cache.URLs(),
+		LeafIndexFromSCT: true,
 	}, nil
 }
 

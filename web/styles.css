@@ -515,6 +515,30 @@ h3 {
   padding: 24px;
 }
 
+.checkpoint-body {
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid var(--soft-line);
+  background: var(--wash);
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.tile-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.tile-list li {
+  overflow-wrap: anywhere;
+}
+
 .merkle-tree {
   position: relative;
   margin: 18px 0 16px;
