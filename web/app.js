@@ -185,13 +185,16 @@ function renderMerklePath(proof) {
     return "";
   }
 
+  const tileLevels = tileLevelsForSteps(proof);
   const stepsFromRoot = proof.audit_steps.slice().reverse();
   const leaf = shortHash(proof.leaf_hash);
   const root = shortHash(proof.tree_head || "");
   const mobileSteps = proof.audit_steps.map((step, index) => {
     const currentHash = index === 0 ? proof.leaf_hash : proof.audit_steps[index - 1].parent_hash;
+    const tileDivider = tileBoundaryDivider(tileLevels, index, index - 1);
     return `
-      <li>
+      ${tileDivider}
+      <li class="${tileLevelClass(tileLevels, index)}">
         <div class="audit-step-title">
           <b>L${step.level + 1}</b>
           <span>${escapeHTML(step.sibling_side)} sibling</span>
@@ -208,32 +211,40 @@ function renderMerklePath(proof) {
     `;
   }).join("");
 
+  const desktopRows = stepsFromRoot.map((step, iRev) => {
+    const iOrig = proof.audit_steps.length - 1 - iRev;
+    const prevIOrig = iRev === 0 ? -1 : proof.audit_steps.length - iRev;
+    const tileDivider = tileBoundaryDivider(tileLevels, iOrig, prevIOrig);
+    return `
+      ${tileDivider}
+      <div class="tree-row branch-${step.sibling_side} ${tileLevelClass(tileLevels, iOrig)}">
+        <div class="tree-cell left-cell">
+          ${step.sibling_side === "left" ? treeSibling(step) : ""}
+        </div>
+        <div class="tree-spine">
+          <div class="tree-node path-node">
+            <b>L${step.level + 1} parent</b>
+            <span>${escapeHTML(shortHash(step.parent_hash))}</span>
+          </div>
+        </div>
+        <div class="tree-cell right-cell">
+          ${step.sibling_side === "right" ? treeSibling(step) : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+
   return `
     <div class="merkle-tree" aria-label="Verified Merkle audit path as a tree">
       <div class="tree-caption">
-        ${proof.audit_steps.length} SHA-256 sibling hashes rebuild one path through the Merkle tree.
+        ${proof.audit_steps.length} SHA-256 sibling hashes rebuild one path through the Merkle tree.${tileLevels ? " Tile boundaries are marked where one Static CT tile's hashes end and the next begins." : ""}
       </div>
       <div class="tree-root tree-node">
         <b>STH root</b>
         <span>${escapeHTML(root)}</span>
       </div>
       <div class="tree-scroll">
-        ${stepsFromRoot.map((step) => `
-          <div class="tree-row branch-${step.sibling_side}">
-            <div class="tree-cell left-cell">
-              ${step.sibling_side === "left" ? treeSibling(step) : ""}
-            </div>
-            <div class="tree-spine">
-              <div class="tree-node path-node">
-                <b>L${step.level + 1} parent</b>
-                <span>${escapeHTML(shortHash(step.parent_hash))}</span>
-              </div>
-            </div>
-            <div class="tree-cell right-cell">
-              ${step.sibling_side === "right" ? treeSibling(step) : ""}
-            </div>
-          </div>
-        `).join("")}
+        ${desktopRows}
       </div>
       <div class="tree-leaf tree-node">
         <b>certificate leaf</b>
@@ -261,6 +272,51 @@ function treeSibling(step) {
       <span>${escapeHTML(shortHash(step.sibling_hash))}</span>
     </div>
   `;
+}
+
+function tileLevelsForSteps(proof) {
+  if (proof.api_flavor !== "static-ct-api") return null;
+  if (!proof.audit_steps?.length) return null;
+  const treeSize = Number(proof.tree_size);
+  const leafIndex = Number(proof.leaf_index);
+  if (!Number.isFinite(treeSize) || treeSize < 1) return null;
+  if (!Number.isFinite(leafIndex) || leafIndex < 0) return null;
+
+  const levels = [];
+  let sn = leafIndex;
+  let fn = treeSize - 1;
+  let merkleLevel = 0;
+  while (fn > 0) {
+    const skip = sn === fn && sn % 2 === 0;
+    if (!skip) {
+      levels.push(Math.floor(merkleLevel / 8));
+    }
+    sn = Math.floor(sn / 2);
+    fn = Math.floor(fn / 2);
+    merkleLevel++;
+  }
+  if (levels.length !== proof.audit_steps.length) return null;
+  return levels;
+}
+
+function tileLevelClass(tileLevels, originalIndex) {
+  if (!tileLevels) return "";
+  const lvl = tileLevels[originalIndex];
+  if (lvl === undefined) return "";
+  return `tile-level-${lvl}`;
+}
+
+// tileBoundaryDivider returns a divider node when the tile level at `currentIndex`
+// differs from the tile level at `prevIndex` (using the original, leaf-to-root
+// audit-path indexing). Returns "" when tile info is unavailable or no boundary
+// crossing happens.
+function tileBoundaryDivider(tileLevels, currentIndex, prevIndex) {
+  if (!tileLevels) return "";
+  const current = tileLevels[currentIndex];
+  if (current === undefined) return "";
+  const prev = prevIndex >= 0 && prevIndex < tileLevels.length ? tileLevels[prevIndex] : null;
+  if (prev === current) return "";
+  return `<div class="tile-divider" role="presentation"><span>Level ${current} tile</span></div>`;
 }
 
 function renderHashTranscript(proof) {
