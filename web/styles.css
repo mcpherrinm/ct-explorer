@@ -37,6 +37,10 @@ input {
   font: inherit;
 }
 
+a {
+  color: inherit;
+}
+
 .site-header {
   width: min(980px, calc(100% - 40px));
   margin: 25px auto 0;
