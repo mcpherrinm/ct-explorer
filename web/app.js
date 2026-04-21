@@ -6,11 +6,39 @@ const validationEl = document.querySelector("#validation");
 const sctsEl = document.querySelector("#scts");
 const proofsEl = document.querySelector("#proofs");
 
-form.addEventListener("submit", async (event) => {
+const initialStatus = statusBand.textContent;
+
+form.addEventListener("submit", (event) => {
   event.preventDefault();
   const target = targetInput.value.trim();
   if (!target) return;
 
+  const currentParam = new URL(window.location.href).searchParams.get("url");
+  if (target !== currentParam) {
+    const next = new URL(window.location.href);
+    next.searchParams.set("url", target);
+    history.pushState({ target }, "", next);
+  }
+  runTrace(target);
+});
+
+window.addEventListener("popstate", () => {
+  const target = new URL(window.location.href).searchParams.get("url");
+  if (target) {
+    targetInput.value = target;
+    runTrace(target);
+  } else {
+    resetReport();
+  }
+});
+
+const initialTarget = new URL(window.location.href).searchParams.get("url");
+if (initialTarget) {
+  targetInput.value = initialTarget;
+  runTrace(initialTarget);
+}
+
+async function runTrace(target) {
   setStatus(`Tracing ${target}...`);
   setLoading();
 
@@ -32,7 +60,19 @@ form.addEventListener("submit", async (event) => {
     proofsEl.className = "empty";
     proofsEl.textContent = "";
   }
-});
+}
+
+function resetReport() {
+  setStatus(initialStatus);
+  certificateEl.className = "empty";
+  certificateEl.textContent = "";
+  validationEl.className = "empty";
+  validationEl.textContent = "";
+  sctsEl.className = "empty";
+  sctsEl.textContent = "";
+  proofsEl.className = "empty";
+  proofsEl.textContent = "";
+}
 
 function setLoading() {
   certificateEl.className = "empty";
