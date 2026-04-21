@@ -109,10 +109,11 @@
         <article class="panel wide proof-stage" style="--step: '04'">
           <div class="panel-kicker">Proof</div>
           <h2>Ask a log for an inclusion proof</h2>
-          <p class="section-copy">CT logs are append-only ledgers backed by Merkle trees. Each certificate or precertificate becomes a SHA-256 leaf hash. The log returns an audit path: the sibling hashes needed to recompute the Signed Tree Head root.</p>
+          <p class="section-copy">CT logs are append-only ledgers backed by Merkle trees. Each certificate or precertificate becomes a SHA-256 leaf hash. RFC 6962 logs return an audit path on request. <a href="https://c2sp.org/static-ct-api" target="_blank" rel="noreferrer">Static CT API</a> logs instead publish a signed checkpoint plus a tree-shaped set of static tiles; the explorer fetches the matching tiles and reassembles the audit path itself.</p>
           <p class="resource-row">
             <a href="https://www.rfc-editor.org/rfc/rfc6962#section-2.1.1" target="_blank" rel="noreferrer">Merkle audit paths</a>
             <a href="https://www.rfc-editor.org/rfc/rfc6962#section-3.5" target="_blank" rel="noreferrer">Signed Tree Heads</a>
+            <a href="https://c2sp.org/static-ct-api" target="_blank" rel="noreferrer">Static CT API</a>
           </p>
           <div id="proofs" class="empty"></div>
         </article>

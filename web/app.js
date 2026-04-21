@@ -113,17 +113,34 @@ function renderSCTs(scts) {
   sctsEl.innerHTML = scts.map((sct, index) => {
     const logName = sct.log?.description || "Unknown log";
     const operator = sct.log?.operator || "No matching public log entry";
+    const state = sct.log?.state;
     return `
       <article class="sct-card">
         <h3>${escapeHTML(logName)}</h3>
+        ${renderLogStatePill(state)}
         <p class="mini">promise ${index + 1} / ${escapeHTML(operator)}</p>
         <p class="mini">source: ${escapeHTML(sct.source)}</p>
         <p class="mini">timestamp: ${formatDate(sct.timestamp)}</p>
         <p class="mini">signature: ${escapeHTML(sct.hash_alg)} + ${escapeHTML(sct.signature_alg)}</p>
         <p class="mini">log id: ${escapeHTML(sct.log_id)}</p>
+        ${sct.log?.type ? `<p class="mini">api: ${escapeHTML(apiLabel(sct.log.type))}</p>` : ""}
       </article>
     `;
   }).join("");
+}
+
+function apiLabel(type) {
+  if (type === "static-ct-api") return "Static CT API (tiles + checkpoint)";
+  if (type === "rfc6962") return "RFC 6962 (get-sth + get-proof-by-hash)";
+  return type;
+}
+
+function renderLogStatePill(state) {
+  if (!state) return "";
+  const usable = state === "usable";
+  const cls = usable ? "state-pill state-pill-usable" : "state-pill state-pill-flag";
+  const prefix = usable ? "" : "⚠ not usable · ";
+  return `<p class="state-row"><span class="${cls}">${escapeHTML(prefix + state)}</span></p>`;
 }
 
 function renderProofs(report) {
@@ -132,20 +149,23 @@ function renderProofs(report) {
     const proof = sct.proof || { status: "not-attempted", explanation: "no proof attempt was available" };
     const proven = proof.status === "proven-x509-leaf" || proof.status === "proven-precert-leaf";
     const rootText = proof.root_ok ? "STH root verified" : "STH root not verified";
+    const flavor = proof.api_flavor || sct.log?.type;
     return `
       <article class="proof-item ${proven ? "proven" : ""}">
         <h3>${escapeHTML(sct.log?.description || "Unknown log")}</h3>
         <div class="badge-row">
           <span class="badge ${proven ? "good" : "bad"}">${proven ? "✓ inclusion proven" : "proof missing"}</span>
           ${proof.tree_size ? `<span class="badge ${proof.root_ok ? "good" : "bad"}">${proof.root_ok ? `✓ ${rootText}` : rootText}</span>` : ""}
+          ${flavor ? `<span class="badge">${escapeHTML(apiLabel(flavor))}</span>` : ""}
         </div>
         <p>${escapeHTML(proof.explanation)}</p>
+        ${renderStaticCTBlock(proof)}
         ${renderMerklePath(proof)}
         ${renderHashTranscript(proof)}
         ${proof.leaf_hash ? `<p class="mini">leaf hash ${escapeHTML(proof.leaf_hash)}</p>` : ""}
-        ${proof.tree_size ? `<p class="mini">tree size ${proof.tree_size} · leaf index ${proof.leaf_index}</p>` : ""}
+        ${proof.tree_size ? `<p class="mini">tree size ${proof.tree_size} · leaf index ${proof.leaf_index}${proof.leaf_index_from_sct ? " (from SCT leaf_index extension)" : ""}</p>` : ""}
         ${proof.audit_path?.length ? `<p class="mini">audit path nodes ${proof.audit_path.length}</p>` : ""}
-        ${proof.proof_url ? `<p class="mini"><a class="plain-link" href="${escapeHTML(proof.proof_url)}" target="_blank" rel="noopener noreferrer">View raw inclusion proof</a></p>` : ""}
+        ${proof.proof_url ? `<p class="mini"><a class="plain-link" href="${escapeHTML(proof.proof_url)}" target="_blank" rel="noopener noreferrer">${proof.api_flavor === "static-ct-api" ? "View raw checkpoint" : "View raw inclusion proof"}</a></p>` : ""}
       </article>
     `;
   }).join("");
@@ -154,18 +174,37 @@ function renderProofs(report) {
   proofsEl.innerHTML = notes + (proofCards || `<div class="empty">There were no SCTs to match against logs.</div>`);
 }
 
+function renderStaticCTBlock(proof) {
+  if (proof.api_flavor !== "static-ct-api") return "";
+  const rows = [];
+  if (proof.checkpoint_origin) {
+    rows.push(`<p class="mini">checkpoint origin: ${escapeHTML(proof.checkpoint_origin)}</p>`);
+  }
+  if (proof.checkpoint_body) {
+    rows.push(`<details class="hash-transcript"><summary>Show signed checkpoint body</summary><pre class="checkpoint-body"><code>${escapeHTML(proof.checkpoint_body)}</code></pre></details>`);
+  }
+  if (proof.tile_urls?.length) {
+    const links = proof.tile_urls.map((u) => `<li><a class="plain-link" href="${escapeHTML(u)}" target="_blank" rel="noopener noreferrer">${escapeHTML(u)}</a></li>`).join("");
+    rows.push(`<details class="hash-transcript"><summary>Show ${proof.tile_urls.length} tile${proof.tile_urls.length === 1 ? "" : "s"} fetched to rebuild the audit path</summary><ul class="tile-list">${links}</ul></details>`);
+  }
+  return rows.join("");
+}
+
 function renderMerklePath(proof) {
   if (!proof.audit_steps?.length || !proof.leaf_hash) {
     return "";
   }
 
+  const tileLevels = tileLevelsForSteps(proof);
   const stepsFromRoot = proof.audit_steps.slice().reverse();
   const leaf = shortHash(proof.leaf_hash);
   const root = shortHash(proof.tree_head || "");
   const mobileSteps = proof.audit_steps.map((step, index) => {
     const currentHash = index === 0 ? proof.leaf_hash : proof.audit_steps[index - 1].parent_hash;
+    const tileDivider = tileBoundaryDivider(tileLevels, index, index - 1);
     return `
-      <li>
+      ${tileDivider}
+      <li class="${tileLevelClass(tileLevels, index)}">
         <div class="audit-step-title">
           <b>L${step.level + 1}</b>
           <span>${escapeHTML(step.sibling_side)} sibling</span>
@@ -182,32 +221,40 @@ function renderMerklePath(proof) {
     `;
   }).join("");
 
+  const desktopRows = stepsFromRoot.map((step, iRev) => {
+    const iOrig = proof.audit_steps.length - 1 - iRev;
+    const prevIOrig = iRev === 0 ? -1 : proof.audit_steps.length - iRev;
+    const tileDivider = tileBoundaryDivider(tileLevels, iOrig, prevIOrig);
+    return `
+      ${tileDivider}
+      <div class="tree-row branch-${step.sibling_side} ${tileLevelClass(tileLevels, iOrig)}">
+        <div class="tree-cell left-cell">
+          ${step.sibling_side === "left" ? treeSibling(step) : ""}
+        </div>
+        <div class="tree-spine">
+          <div class="tree-node path-node">
+            <b>L${step.level + 1} parent</b>
+            <span>${escapeHTML(shortHash(step.parent_hash))}</span>
+          </div>
+        </div>
+        <div class="tree-cell right-cell">
+          ${step.sibling_side === "right" ? treeSibling(step) : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+
   return `
     <div class="merkle-tree" aria-label="Verified Merkle audit path as a tree">
       <div class="tree-caption">
-        ${proof.audit_steps.length} SHA-256 sibling hashes rebuild one path through the Merkle tree.
+        ${proof.audit_steps.length} SHA-256 sibling hashes rebuild one path through the Merkle tree.${tileLevels ? " Tile boundaries are marked where one Static CT tile's hashes end and the next begins." : ""}
       </div>
       <div class="tree-root tree-node">
         <b>STH root</b>
         <span>${escapeHTML(root)}</span>
       </div>
       <div class="tree-scroll">
-        ${stepsFromRoot.map((step) => `
-          <div class="tree-row branch-${step.sibling_side}">
-            <div class="tree-cell left-cell">
-              ${step.sibling_side === "left" ? treeSibling(step) : ""}
-            </div>
-            <div class="tree-spine">
-              <div class="tree-node path-node">
-                <b>L${step.level + 1} parent</b>
-                <span>${escapeHTML(shortHash(step.parent_hash))}</span>
-              </div>
-            </div>
-            <div class="tree-cell right-cell">
-              ${step.sibling_side === "right" ? treeSibling(step) : ""}
-            </div>
-          </div>
-        `).join("")}
+        ${desktopRows}
       </div>
       <div class="tree-leaf tree-node">
         <b>certificate leaf</b>
@@ -235,6 +282,51 @@ function treeSibling(step) {
       <span>${escapeHTML(shortHash(step.sibling_hash))}</span>
     </div>
   `;
+}
+
+function tileLevelsForSteps(proof) {
+  if (proof.api_flavor !== "static-ct-api") return null;
+  if (!proof.audit_steps?.length) return null;
+  const treeSize = Number(proof.tree_size);
+  const leafIndex = Number(proof.leaf_index);
+  if (!Number.isFinite(treeSize) || treeSize < 1) return null;
+  if (!Number.isFinite(leafIndex) || leafIndex < 0) return null;
+
+  const levels = [];
+  let sn = leafIndex;
+  let fn = treeSize - 1;
+  let merkleLevel = 0;
+  while (fn > 0) {
+    const skip = sn === fn && sn % 2 === 0;
+    if (!skip) {
+      levels.push(Math.floor(merkleLevel / 8));
+    }
+    sn = Math.floor(sn / 2);
+    fn = Math.floor(fn / 2);
+    merkleLevel++;
+  }
+  if (levels.length !== proof.audit_steps.length) return null;
+  return levels;
+}
+
+function tileLevelClass(tileLevels, originalIndex) {
+  if (!tileLevels) return "";
+  const lvl = tileLevels[originalIndex];
+  if (lvl === undefined) return "";
+  return `tile-level-${lvl}`;
+}
+
+// tileBoundaryDivider returns a divider node when the tile level at `currentIndex`
+// differs from the tile level at `prevIndex` (using the original, leaf-to-root
+// audit-path indexing). Returns "" when tile info is unavailable or no boundary
+// crossing happens.
+function tileBoundaryDivider(tileLevels, currentIndex, prevIndex) {
+  if (!tileLevels) return "";
+  const current = tileLevels[currentIndex];
+  if (current === undefined) return "";
+  const prev = prevIndex >= 0 && prevIndex < tileLevels.length ? tileLevels[prevIndex] : null;
+  if (prev === current) return "";
+  return `<div class="tile-divider" role="presentation"><span>Level ${current} tile</span></div>`;
 }
 
 function renderHashTranscript(proof) {

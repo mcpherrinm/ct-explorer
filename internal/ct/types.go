@@ -70,24 +70,22 @@ type SCTReport struct {
 	Proof        *ProofReport `json:"proof,omitempty"`
 }
 
-type LogSummary struct {
-	Description string `json:"description"`
-	URL         string `json:"url"`
-	Operator    string `json:"operator"`
-	State       string `json:"state"`
-}
-
 type ProofReport struct {
-	Status      string      `json:"status"`
-	Explanation string      `json:"explanation"`
-	LeafHash    string      `json:"leaf_hash,omitempty"`
-	ProofURL    string      `json:"proof_url,omitempty"`
-	TreeSize    uint64      `json:"tree_size,omitempty"`
-	TreeHead    string      `json:"tree_head,omitempty"`
-	LeafIndex   uint64      `json:"leaf_index,omitempty"`
-	AuditPath   []string    `json:"audit_path,omitempty"`
-	RootOK      bool        `json:"root_ok"`
-	AuditSteps  []AuditStep `json:"audit_steps,omitempty"`
+	Status            string      `json:"status"`
+	Explanation       string      `json:"explanation"`
+	APIFlavor         string      `json:"api_flavor,omitempty"`
+	LeafHash          string      `json:"leaf_hash,omitempty"`
+	ProofURL          string      `json:"proof_url,omitempty"`
+	TreeSize          uint64      `json:"tree_size,omitempty"`
+	TreeHead          string      `json:"tree_head,omitempty"`
+	LeafIndex         uint64      `json:"leaf_index,omitempty"`
+	AuditPath         []string    `json:"audit_path,omitempty"`
+	RootOK            bool        `json:"root_ok"`
+	AuditSteps        []AuditStep `json:"audit_steps,omitempty"`
+	CheckpointOrigin  string      `json:"checkpoint_origin,omitempty"`
+	CheckpointBody    string      `json:"checkpoint_body,omitempty"`
+	TileURLs          []string    `json:"tile_urls,omitempty"`
+	LeafIndexFromSCT  bool        `json:"leaf_index_from_sct,omitempty"`
 }
 
 type AuditStep struct {
@@ -102,10 +100,23 @@ type LogList struct {
 }
 
 type LogInfo struct {
-	Description string
-	URL         string
-	Operator    string
-	Key         string
-	LogID       string
-	State       string
+	Description   string
+	URL           string
+	SubmissionURL string
+	MonitoringURL string
+	Operator      string
+	Key           string
+	LogID         string
+	State         string
+	Type          string // "rfc6962" or "static-ct-api"
+}
+
+type LogSummary struct {
+	Description   string `json:"description"`
+	URL           string `json:"url"`
+	SubmissionURL string `json:"submission_url,omitempty"`
+	MonitoringURL string `json:"monitoring_url,omitempty"`
+	Operator      string `json:"operator"`
+	State         string `json:"state"`
+	Type          string `json:"type,omitempty"`
 }

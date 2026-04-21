@@ -13,7 +13,7 @@ import (
 	"github.com/google/certificate-transparency-go/loglist3"
 )
 
-var chromeLogListURL = "https://www.gstatic.com/ct/log_list/v3/log_list.json"
+var chromeLogListURL = "https://www.gstatic.com/ct/log_list/v3/all_logs_list.json"
 
 type LogDirectory struct {
 	client *http.Client
@@ -59,13 +59,32 @@ func (d *LogDirectory) Load(ctx context.Context) (LogList, error) {
 	list := LogList{Logs: make([]LogInfo, 0)}
 	for _, operator := range raw.Operators {
 		for _, log := range operator.Logs {
+			u := strings.TrimRight(log.URL, "/")
 			list.Logs = append(list.Logs, LogInfo{
-				Description: log.Description,
-				URL:         strings.TrimRight(log.URL, "/"),
-				Operator:    operator.Name,
-				Key:         base64.StdEncoding.EncodeToString(log.Key),
-				LogID:       base64.StdEncoding.EncodeToString(log.LogID),
-				State:       logState(log.State),
+				Description:   log.Description,
+				URL:           u,
+				SubmissionURL: u,
+				MonitoringURL: u,
+				Operator:      operator.Name,
+				Key:           base64.StdEncoding.EncodeToString(log.Key),
+				LogID:         base64.StdEncoding.EncodeToString(log.LogID),
+				State:         logState(log.State),
+				Type:          "rfc6962",
+			})
+		}
+		for _, log := range operator.TiledLogs {
+			submission := strings.TrimRight(log.SubmissionURL, "/")
+			monitoring := strings.TrimRight(log.MonitoringURL, "/")
+			list.Logs = append(list.Logs, LogInfo{
+				Description:   log.Description,
+				URL:           monitoring,
+				SubmissionURL: submission,
+				MonitoringURL: monitoring,
+				Operator:      operator.Name,
+				Key:           base64.StdEncoding.EncodeToString(log.Key),
+				LogID:         base64.StdEncoding.EncodeToString(log.LogID),
+				State:         logState(log.State),
+				Type:          "static-ct-api",
 			})
 		}
 	}
