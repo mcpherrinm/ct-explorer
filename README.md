@@ -2,6 +2,10 @@
 
 A microsite for tracing a live HTTPS certificate into Certificate Transparency logs.
 
+<p align="center">
+  <img src="web/og-image.png" alt="Certificate Transparency Proof Explorer preview" width="800">
+</p>
+
 The project is meant to be both a debugging tool and a learning tool. Enter a website, fetch its live certificate, inspect the Signed Certificate Timestamps (SCTs), ask the relevant CT log for an inclusion proof, and replay the Merkle audit path in the browser until it reaches the signed tree head root.
 
 ## Attribution
