@@ -573,6 +573,7 @@ h3 {
   position: relative;
   max-height: 720px;
   overflow: auto;
+  scrollbar-gutter: stable both-edges;
   padding: 12px 0;
 }
 
