@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -140,36 +141,38 @@ func TestMTHOfHashes(t *testing.T) {
 func TestBuildAuditPathAgainstInMemoryTree(t *testing.T) {
 	sizes := []uint64{1, 2, 3, 5, 7, 100, 256, 257, 511, 512, 1023, 1024, 70000}
 	for _, s := range sizes {
-		leaves := make([][]byte, s)
-		for i := range leaves {
-			leaves[i] = leafHash([]byte{byte(i), byte(i >> 8), byte(i >> 16)})
-		}
-		root := mthOfHashes(leaves)
-		rootB64 := base64.StdEncoding.EncodeToString(root)
+		t.Run(fmt.Sprintf("size=%d", s), func(t *testing.T) {
+			leaves := make([][]byte, s)
+			for i := range leaves {
+				leaves[i] = leafHash([]byte{byte(i), byte(i >> 8), byte(i >> 16)})
+			}
+			root := mthOfHashes(leaves)
+			rootB64 := base64.StdEncoding.EncodeToString(root)
 
-		server := newTileTestServer(t, leaves)
-		defer server.Close()
+			server := newTileTestServer(t, leaves)
+			defer server.Close()
 
-		// Pick a handful of indexes including edges.
-		idxs := []uint64{0, s / 2, s - 1}
-		if s > 3 {
-			idxs = append(idxs, s/3)
-		}
-		for _, i := range idxs {
-			cache := NewTileCache(server.Client(), server.URL)
-			path, err := BuildAuditPath(context.Background(), cache, i, s)
-			if err != nil {
-				t.Fatalf("size=%d i=%d: %v", s, i, err)
+			// Pick a handful of indexes including edges.
+			idxs := []uint64{0, s / 2, s - 1}
+			if s > 3 {
+				idxs = append(idxs, s/3)
 			}
-			b64Path := make([]string, len(path))
-			for k, h := range path {
-				b64Path[k] = base64.StdEncoding.EncodeToString(h)
+			for _, i := range idxs {
+				cache := NewTileCache(server.Client(), server.URL)
+				path, err := BuildAuditPath(context.Background(), cache, i, s)
+				if err != nil {
+					t.Fatalf("i=%d: %v", i, err)
+				}
+				b64Path := make([]string, len(path))
+				for k, h := range path {
+					b64Path[k] = base64.StdEncoding.EncodeToString(h)
+				}
+				ok, _ := VerifyAuditPath(leaves[i], b64Path, i, s, rootB64)
+				if !ok {
+					t.Fatalf("i=%d: audit path did not verify", i)
+				}
 			}
-			ok, _ := VerifyAuditPath(leaves[i], b64Path, i, s, rootB64)
-			if !ok {
-				t.Fatalf("size=%d i=%d: audit path did not verify", s, i)
-			}
-		}
+		})
 	}
 }
 

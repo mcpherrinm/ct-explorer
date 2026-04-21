@@ -168,7 +168,6 @@ type TileCache struct {
 
 	mu    sync.Mutex
 	tiles map[string][][]byte
-	urls  map[string]string
 	order []string
 }
 
@@ -178,7 +177,6 @@ func NewTileCache(client *http.Client, monitoringURL string) *TileCache {
 		client:  client,
 		monitor: strings.TrimRight(monitoringURL, "/"),
 		tiles:   make(map[string][][]byte),
-		urls:    make(map[string]string),
 	}
 }
 
@@ -225,7 +223,6 @@ func (c *TileCache) Tile(ctx context.Context, level uint, index uint64, treeSize
 		}
 		c.mu.Lock()
 		c.tiles[key] = hashes
-		c.urls[key] = u
 		c.order = append(c.order, u)
 		c.mu.Unlock()
 		return hashes, nil
