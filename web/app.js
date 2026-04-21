@@ -113,9 +113,11 @@ function renderSCTs(scts) {
   sctsEl.innerHTML = scts.map((sct, index) => {
     const logName = sct.log?.description || "Unknown log";
     const operator = sct.log?.operator || "No matching public log entry";
+    const state = sct.log?.state;
     return `
       <article class="sct-card">
         <h3>${escapeHTML(logName)}</h3>
+        ${renderLogStatePill(state)}
         <p class="mini">promise ${index + 1} / ${escapeHTML(operator)}</p>
         <p class="mini">source: ${escapeHTML(sct.source)}</p>
         <p class="mini">timestamp: ${formatDate(sct.timestamp)}</p>
@@ -131,6 +133,14 @@ function apiLabel(type) {
   if (type === "static-ct-api") return "Static CT API (tiles + checkpoint)";
   if (type === "rfc6962") return "RFC 6962 (get-sth + get-proof-by-hash)";
   return type;
+}
+
+function renderLogStatePill(state) {
+  if (!state) return "";
+  const usable = state === "usable";
+  const cls = usable ? "state-pill state-pill-usable" : "state-pill state-pill-flag";
+  const prefix = usable ? "" : "⚠ not usable · ";
+  return `<p class="state-row"><span class="${cls}">${escapeHTML(prefix + state)}</span></p>`;
 }
 
 function renderProofs(report) {

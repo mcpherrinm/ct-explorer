@@ -484,6 +484,32 @@ h3 {
   background: var(--mint-2);
 }
 
+.state-row {
+  margin: 10px 0 4px;
+}
+
+.state-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.state-pill-usable {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--mint);
+}
+
+.state-pill-flag {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: #ffe7db;
+}
+
 .mini {
   margin: 8px 0;
   color: var(--muted);

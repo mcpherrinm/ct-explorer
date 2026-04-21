@@ -13,7 +13,7 @@ import (
 	"github.com/google/certificate-transparency-go/loglist3"
 )
 
-var chromeLogListURL = "https://www.gstatic.com/ct/log_list/v3/log_list.json"
+var chromeLogListURL = "https://www.gstatic.com/ct/log_list/v3/all_logs_list.json"
 
 type LogDirectory struct {
 	client *http.Client
