@@ -36,12 +36,23 @@ func NewAnalyzer(client *http.Client) *Analyzer {
 }
 
 func DefaultHTTPClient() *http.Client {
-	return &http.Client{
-		Timeout: 12 * time.Second,
-		Transport: &http.Transport{
-			DialContext: safeDialer(8 * time.Second).DialContext,
-		},
+	transport := &http.Transport{
+		DialContext: safeDialer(8 * time.Second).DialContext,
 	}
+	return &http.Client{
+		Timeout:   12 * time.Second,
+		Transport: userAgentRoundTripper{next: transport},
+	}
+}
+
+type userAgentRoundTripper struct {
+	next http.RoundTripper
+}
+
+func (rt userAgentRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.Header.Set("User-Agent", "https://github.com/jordan-wright/ct-explorer")
+	return rt.next.RoundTrip(req)
 }
 
 func (a *Analyzer) Analyze(ctx context.Context, rawURL string) (*Report, error) {
